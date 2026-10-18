@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu Kids Game - Ammar & Afif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', 'Comic Neue', cursive, sans-serif;
+            background: linear-gradient(135deg, #fbcfe8 0%, #bae6fd 50%, #fed7aa 100%);
+            min-height: 100vh;
+        }
+        .pop-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .pop-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-slow {
+            animation: bounce-slow 2s infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 border-4 border-amber-200">
+        
+        <!-- Header / Logo -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-indigo-600 drop-shadow-sm flex items-center justify-center gap-2">
+                <span>🌟</span> Edu Kids Fun <span>🚀</span>
+            </h1>
+            <p class="text-sm text-slate-500 font-medium">Learn While Having Fun with AI Power</p>
+        </div>
+
+        <!-- VIEW 1: PROFILE SELECTION & LEADERBOARD -->
+        <div id="view-profile" class="space-y-6">
+            <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 text-center">
+                <h2 class="text-xl font-bold text-indigo-700">Who is playing today?</h2>
+                <p class="text-sm text-slate-600">Select your profile to start learning!</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onclick="selectProfile('Ammar Faiq', 9)" class="pop-card bg-gradient-to-br from-blue-400 to-indigo-500 text-white p-6 rounded-2xl text-center border-b-6 border-indigo-700 font-bold flex flex-col items-center">
+                    <span class="text-4xl mb-2">👦🏽</span>
+                    <span class="text-2xl">Ammar Faiq</span>
+                </button>
+
+                <button onclick="selectProfile('Afif Firdan', 7)" class="pop-card bg-gradient-to-br from-emerald-400 to-teal-500 text-white p-6 rounded-2xl text-center border-b-6 border-teal-700 font-bold flex flex-col items-center">
+                    <span class="text-4xl mb-2">🧒🏻</span>
+                    <span class="text-2xl">Afif Firdan</span>
+                </button>
+            </div>
+
+            <div id="saved-progress-banner" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-bold text-amber-800" id="saved-info">Saved progress found!</p>
+                    <p class="text-xs text-amber-600">Resume your previous game session.</p>
+                </div>
+                <button onclick="resumeGame()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow">
+                    Resume
+                </button>
+            </div>
+
+            <!-- LEADERBOARD TABLE: Nama | Main | Jumlah Markah | Ketepatan (Sorted by Ketepatan Descending) -->
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
+                        <span>🏆</span> Game Performance Records
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Sorted by: Highest Accuracy</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="bg-indigo-100 text-indigo-800 font-bold border-b border-indigo-200">
+                                <th class="p-2.5 rounded-l-lg">Name</th>
+                                <th class="p-2.5 text-center">Plays</th>
+                                <th class="p-2.5 text-center">Total Score</th>
+                                <th class="p-2.5 text-right rounded-r-lg">Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody" class="divide-y divide-slate-200 font-medium text-slate-700">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: SUBJECT SELECTION & PARENT PANEL -->
+        <div id="view-subject" class="hidden space-y-6">
+            <div class="flex items-center justify-between bg-slate-100 p-3 rounded-xl">
+                <div>
+                    <span class="text-xs text-slate-500">Current Player:</span>
+                    <h3 class="font-bold text-indigo-600 text-lg" id="current-player-name">-</h3>
+                </div>
+                <button onclick="backToProfile()" class="text-xs bg-slate-200 hover:bg-slate-300 font-semibold px-3 py-1.5 rounded-lg">Switch Profile</button>
+            </div>
+
+            <div class="text-center">
+                <h2 class="text-xl font-bold text-slate-800">Select Learning Subject</h2>
+                <p class="text-sm text-slate-500">AI-Powered Questions | 10 Questions | 15s Lightning Timer!</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="startSubject('Spelling')" class="pop-card bg-pink-100 border-2 border-pink-300 text-pink-700 p-5 rounded-2xl flex flex-col items-center text-center font-bold">
+                    <span class="text-3xl mb-1">📝</span>
+                    <span>Spelling</span>
+                    <span class="text-xs font-normal text-pink-500 mt-1">Listen & Type English Word</span>
+                </button>
+
+                <button onclick="startSubject('Math')" class="pop-card bg-blue-100 border-2 border-blue-300 text-blue-700 p-5 rounded-2xl flex flex-col items-center text-center font-bold">
+                    <span class="text-3xl mb-1">🔢</span>
+                    <span>Math</span>
+                    <span class="text-xs font-normal text-blue-500 mt-1">AI Math Calculations</span>
+                </button>
+
+                <button onclick="startSubject('Sciences')" class="pop-card bg-emerald-100 border-2 border-emerald-300 text-emerald-700 p-5 rounded-2xl flex flex-col items-center text-center font-bold">
+                    <span class="text-3xl mb-1">🌱</span>
+                    <span>Sciences</span>
+                    <span class="text-xs font-normal text-emerald-500 mt-1">Nature & Science</span>
+                </button>
+
+                <button onclick="startSubject('Islamic Studies')" class="pop-card bg-purple-100 border-2 border-purple-300 text-purple-700 p-5 rounded-2xl flex flex-col items-center text-center font-bold">
+                    <span class="text-3xl mb-1">🕌</span>
+                    <span>Islamic Studies</span>
+                    <span class="text-xs font-normal text-purple-500 mt-1">Islamic Knowledge</span>
+                </button>
+            </div>
+
+            <!-- Parents Custom English Spelling Manager -->
+            <div class="border-2 border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">👨‍👩‍👦 Parents Corner (Add Custom English Word)</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="parent-word" placeholder="Ex: Apple, School" class="flex-1 text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="text" id="parent-hint" placeholder="Hint / Meaning" class="flex-1 text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button onclick="addCustomWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow">Add</button>
+                </div>
+                <p id="custom-word-status" class="text-xs text-emerald-600 mt-2 font-medium hidden">English word successfully added to Spelling list!</p>
+            </div>
+        </div>
+
+        <!-- VIEW 3: LOADING AI QUESTIONS -->
+        <div id="view-loading" class="hidden py-16 text-center space-y-4">
+            <div class="inline-block animate-spin text-5xl">✨</div>
+            <h3 class="text-xl font-bold text-indigo-700">Gemini AI is generating new questions...</h3>
+            <p class="text-xs text-slate-500">Please wait while unique questions are prepared for you.</p>
+        </div>
+
+        <!-- VIEW 4: GAMEPLAY SCREEN -->
+        <div id="view-game" class="hidden space-y-5">
+            <!-- HUD: Stats & Timer -->
+            <div class="flex items-center justify-between bg-indigo-900 text-white p-3 rounded-2xl">
+                <div>
+                    <span class="text-[10px] uppercase text-indigo-300 block">Question</span>
+                    <span class="text-lg font-extrabold" id="hud-q-count">1/10</span>
+                </div>
+                <div class="text-center">
+                    <span class="text-[10px] uppercase text-indigo-300 block">Timer</span>
+                    <span class="text-xl font-extrabold text-amber-400" id="hud-timer">15s</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase text-indigo-300 block">Score</span>
+                    <span class="text-lg font-extrabold text-emerald-400" id="hud-score">0</span>
+                </div>
+            </div>
+
+            <!-- Question Card (Clean with no type badge) -->
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 text-center space-y-4">
+                <h3 id="q-text" class="text-xl font-bold text-slate-800 min-h-[60px] flex items-center justify-center">Question will appear here...</h3>
+                
+                <!-- Spelling Audio Trigger -->
+                <div id="spelling-audio-box" class="hidden">
+                    <button onclick="playSpellingAudio()" class="bg-pink-500 hover:bg-pink-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg flex items-center justify-center gap-2 mx-auto">
+                        <span class="text-2xl">🔊</span> Listen English Audio Word
+                    </button>
+                </div>
+            </div>
+
+            <!-- Answer Options / Input Area -->
+            <div id="answer-area" class="space-y-3">
+                <!-- Dynamic choices or inputs injected via JS -->
+            </div>
+
+            <!-- Feedback Alert -->
+            <div id="feedback-box" class="hidden p-4 rounded-2xl text-center font-bold text-sm shadow">
+                <!-- Feedback message -->
+            </div>
+        </div>
+
+        <!-- VIEW 5: SUMMARY & RESULTS -->
+        <div id="view-summary" class="hidden space-y-6 text-center">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-3xl shadow-lg space-y-2">
+                <h2 class="text-2xl font-extrabold">Round Completed! 🎉</h2>
+                <p class="text-indigo-100 text-sm" id="summary-player-info">Performance for Player</p>
+                <div class="text-4xl font-black text-amber-300 my-2" id="final-score">Score: 0 / 100</div>
+            </div>
+
+            <div class="space-y-3 text-left">
+                <h3 class="font-bold text-slate-700 text-sm">Review & Answer Explanations:</h3>
+                <div id="review-list" class="max-h-60 overflow-y-auto space-y-2 pr-1">
+                    <!-- Injected review items -->
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="restartSubject()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl shadow-lg">Play Again (New Round)</button>
+                <button onclick="backToSubject()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-2xl">Change Subject</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border-4 border-indigo-200">
+            <h3 id="modal-title" class="text-xl font-bold text-indigo-700">Message</h3>
+            <p id="modal-desc" class="text-sm text-slate-600">Brief description...</p>
+            <button onclick="closeModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl">Got it</button>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            playerName: '',
+            playerAge: 0,
+            subject: '',
+            score: 0,
+            questionIndex: 0,
+            questions: [],
+            timer: 15,
+            timerInterval: null,
+            resultsLog: [],
+            customSpellingWords: []
+        };
+
+        // Fallback static question datasets in English
+        const fallbackDatabase = {
+            7: {
+                Spelling: [
+                    { word: "CAT", hint: "A furry pet that loves to eat fish", type: "subjective" },
+                    { word: "BOOK", hint: "An object with pages to read and study", type: "subjective" },
+                    { word: "HOUSE", hint: "A building where a family lives", type: "subjective" },
+                    { word: "APPLE", hint: "A sweet red or green fruit", type: "subjective" },
+                    { word: "PENCIL", hint: "A tool used for writing and drawing", type: "subjective" }
+                ],
+                Math: [
+                    { q: "2 + 3 = ?", options: ["4", "5", "6", "7"], correct: "5", explanation: "2 plus 3 equals 5." },
+                    { q: "5 - 2 = ?", options: ["2", "3", "4", "5"], correct: "3", explanation: "5 minus 2 leaves 3." },
+                    { q: "How many apples are shown?", options: ["1", "2", "3", "4"], correct: "2", optionsEmoji: ["🍎", "🍎🍎", "🍎🍎🍎", "🍎🍎🍎🍎"], explanation: "There are 2 apples." },
+                    { q: "1 + 4 = ?", options: ["4", "5", "6", "7"], correct: "5", explanation: "1 plus 4 is 5." },
+                    { q: "Fill in the blank: 3, __, 5", options: ["3", "4", "6", "2"], correct: "4", explanation: "The number between 3 and 5 is 4." }
+                ],
+                Sciences: [
+                    { q: "Which animal lives in water?", options: ["Cat", "Fish", "Bird", "Tiger"], correct: "Fish", explanation: "Fish live and breathe underwater." },
+                    { q: "Choose the animal that can fly:", options: ["🐱", "🐟", "🦅", "🐢"], correct: "🦅", optionsEmoji: ["🐱", "🐟", "🦅", "🐢"], explanation: "Birds have wings to fly." },
+                    { q: "Which organ is used for seeing?", options: ["Ear", "Eye", "Nose", "Tongue"], correct: "Eye", explanation: "Eyes are used for seeing our surroundings." },
+                    { q: "Choose the watermelon icon:", options: ["🍉", "🍌", "🍊", "🍇"], correct: "🍉", optionsEmoji: ["🍉", "🍌", "🍊", "🍇"], explanation: "Watermelon has green skin and red flesh." },
+                    { q: "What color is a healthy plant leaf?", options: ["Red", "Green", "Blue", "Yellow"], correct: "Green", explanation: "Healthy leaves are generally green." }
+                ],
+                Islamic_Studies: [
+                    { q: "How many Pillars of Islam are there?", options: ["3", "4", "5", "6"], correct: "5", explanation: "There are 5 Pillars of Islam." },
+                    { q: "Choose the mosque icon for worship:", options: ["⛪", "🕌", "🛕", "🏢"], correct: "🕌", optionsEmoji: ["⛪", "🕌", "🛕", "🏢"], explanation: "A mosque is a place of Islamic worship." },
+                    { q: "Who is the final prophet in Islam?", options: ["Prophet Musa", "Prophet Isa", "Prophet Muhammad PBUH", "Prophet Ibrahim"], correct: "Prophet Muhammad PBUH", explanation: "Prophet Muhammad PBUH is the final messenger." },
+                    { q: "The holy book of Muslims is...", options: ["Torah", "Bible", "Zabur", "Quran"], correct: "Quran", explanation: "The Quran is the holy guide for Muslims." },
+                    { q: "How many Pillars of Faith (Iman) are there?", options: ["4", "5", "6", "7"], correct: "6", explanation: "There are 6 Pillars of Faith." }
+                ]
+            },
+            9: {
+                Spelling: [
+                    { word: "SCHOOL", hint: "A place where children go to learn and study", type: "subjective" },
+                    { word: "TEACHER", hint: "A person who guides students in knowledge", type: "subjective" },
+                    { word: "FRIEND", hint: "A person whom one likes and trusts", type: "subjective" },
+                    { word: "COMPUTER", hint: "An electronic device for processing data", type: "subjective" },
+                    { word: "SCIENCE", hint: "The study of nature and the physical world", type: "subjective" }
+                ],
+                Math: [
+                    { q: "5 + 3 = ?", options: ["7", "8", "9", "6"], correct: "8", explanation: "5 plus 3 equals 8." },
+                    { q: "10 - 4 = ?", options: ["5", "6", "7", "8"], correct: "6", explanation: "10 minus 4 leaves 6." },
+                    { q: "How many apples are shown?", options: ["2", "3", "4", "5"], correct: "3", optionsEmoji: ["🍎🍎", "🍎🍎🍎", "🍎🍎🍎🍎", "🍎"], explanation: "There are 3 apples in total." },
+                    { q: "2 x 3 = ?", options: ["5", "6", "7", "8"], correct: "6", explanation: "2 multiplied by 3 equals 6." },
+                    { q: "Fill in the blank: 15, __, 17", options: ["14", "16", "18", "19"], correct: "16", explanation: "The number between 15 and 17 is 16." }
+                ],
+                Sciences: [
+                    { q: "Which animal lives in water?", options: ["Cat", "Fish", "Bird", "Tiger"], correct: "Fish", explanation: "Fish breathe using gills underwater." },
+                    { q: "Choose the animal that can fly high in the air:", options: ["🐱", "🐟", "🦅", "🐢"], correct: "🦅", optionsEmoji: ["🐱", "🐟", "🦅", "🐢"], explanation: "Birds have wings and can fly." },
+                    { q: "What human organ is used for seeing?", options: ["Ear", "Eye", "Nose", "Tongue"], correct: "Eye", explanation: "The eye is the sense organ for vision." },
+                    { q: "Choose the fruit with green outer skin:", options: ["🍉", "🍌", "🍊", "🍇"], correct: "🍉", optionsEmoji: ["🍉", "🍌", "🍊", "🍇"], explanation: "Watermelons have green outer skin." },
+                    { q: "At what temperature in Celsius does pure water boil?", options: ["50", "100", "0", "200"], correct: "100", explanation: "The boiling point of pure water is 100°C." }
+                ],
+                Islamic_Studies: [
+                    { q: "How many Pillars of Islam are there?", options: ["3", "4", "5", "6"], correct: "5", explanation: "There are 5 Pillars of Islam." },
+                    { q: "Choose the mosque icon for Islamic worship:", options: ["⛪", "🕌", "🛕", "🏢"], correct: "🕌", optionsEmoji: ["⛪", "🕌", "🛕", "🏢"], explanation: "The mosque is the place of worship for Muslims." },
+                    { q: "Who is our final prophet?", options: ["Prophet Musa", "Prophet Isa", "Prophet Muhammad PBUH", "Prophet Ibrahim"], correct: "Prophet Muhammad PBUH", explanation: "Prophet Muhammad PBUH is the final prophet and messenger." },
+                    { q: "What is the holy book of Muslims?", options: ["Torah", "Gospel", "Psalms", "Quran"], correct: "Quran", explanation: "The Quran is the holy book guidance for Muslims." },
+                    { q: "How many Pillars of Faith (Iman) are there?", options: ["4", "5", "6", "7"], correct: "6", explanation: "There are 6 Pillars of Iman." }
+                ]
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderLeaderboard();
+        });
+
+        function getPlayerStats(name) {
+            const raw = localStorage.getItem(`edu_stats_${name}`);
+            if (raw) {
+                return JSON.parse(raw);
+            }
+            return { name, plays: 0, totalScore: 0, totalQuestionsAnswered: 0, totalCorrectAnswers: 0 };
+        }
+
+        function savePlayerStats(name, correctCount, scoreEarned) {
+            let stats = getPlayerStats(name);
+            stats.plays += 1;
+            stats.totalScore += scoreEarned;
+            stats.totalQuestionsAnswered += 10;
+            stats.totalCorrectAnswers += correctCount;
+            localStorage.setItem(`edu_stats_${name}`, JSON.stringify(stats));
+        }
+
+        function renderLeaderboard() {
+            const players = ["Ammar Faiq", "Afif Firdan"];
+            let statsList = players.map(name => getPlayerStats(name));
+
+            // Calculate accuracy percentage
+            statsList.forEach(st => {
+                st.accuracy = st.totalQuestionsAnswered > 0 ? Math.round((st.totalCorrectAnswers / st.totalQuestionsAnswered) * 100) : 0;
+            });
+
+            // Sorting strictly by Ketepatan (Accuracy) descending, tie-breaker by Jumlah Markah
+            statsList.sort((a, b) => b.accuracy - a.accuracy || b.totalScore - a.totalScore);
+
+            const tbody = document.getElementById('leaderboard-tbody');
+            tbody.innerHTML = '';
+
+            statsList.forEach((st, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-indigo-700 flex items-center gap-1.5">
+                        <span>${idx === 0 && (st.totalScore > 0 || st.accuracy > 0) ? '👑' : '🏅'}</span> ${st.name}
+                    </td>
+                    <td class="p-2.5 text-center font-semibold text-slate-600">${st.plays}x</td>
+                    <td class="p-2.5 text-center font-bold text-amber-600">${st.totalScore} pts</td>
+                    <td class="p-2.5 text-right font-black text-emerald-600 text-sm">${st.accuracy}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selectProfile(name) {
+            state.playerName = name;
+            state.playerAge = (name === "Ammar Faiq") ? 9 : 7;
+            document.getElementById('current-player-name').textContent = name;
+
+            const saved = localStorage.getItem(`edu_progress_${name}`);
+            if (saved) {
+                document.getElementById('saved-progress-banner').classList.remove('hidden');
+                document.getElementById('saved-info').textContent = `Saved progress found for ${name}!`;
+            } else {
+                document.getElementById('saved-progress-banner').classList.add('hidden');
+            }
+
+            switchView('view-subject');
+        }
+
+        function backToProfile() {
+            renderLeaderboard();
+            switchView('view-profile');
+        }
+
+        function backToSubject() {
+            switchView('view-subject');
+        }
+
+        function switchView(viewId) {
+            ['view-profile', 'view-subject', 'view-loading', 'view-game', 'view-summary'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function showModal(title, desc) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-desc').textContent = desc;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function addCustomWord() {
+            const word = document.getElementById('parent-word').value.trim().toUpperCase();
+            const hint = document.getElementById('parent-hint').value.trim();
+            if (!word) {
+                showModal('Attention', 'Please enter an English spelling word first.');
+                return;
+            }
+            state.customSpellingWords.push({ word, hint: hint || 'Custom Parent English Word', type: 'subjective' });
+            document.getElementById('parent-word').value = '';
+            document.getElementById('parent-hint').value = '';
+            
+            const status = document.getElementById('custom-word-status');
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 3000);
+        }
+
+        async function startSubject(subjectKey) {
+            state.subject = subjectKey;
+            state.score = 0;
+            state.questionIndex = 0;
+            state.resultsLog = [];
+
+            switchView('view-loading');
+
+            let generatedQuestions = [];
+            try {
+                generatedQuestions = await fetchQuestionsFromGemini(subjectKey, state.playerAge);
+            } catch (err) {
+                console.warn("AI generation failed, falling back to local database", err);
+            }
+
+            if (!generatedQuestions || generatedQuestions.length < 5) {
+                const ageFallback = fallbackDatabase[state.playerAge] || fallbackDatabase[9];
+                let source = ageFallback[subjectKey] || ageFallback.Math;
+                if (subjectKey === 'Spelling') {
+                    source = [...state.customSpellingWords, ...source];
+                }
+                generatedQuestions = [...source];
+            } else if (subjectKey === 'Spelling' && state.customSpellingWords.length > 0) {
+                generatedQuestions = [...state.customSpellingWords, ...generatedQuestions];
+            }
+
+            state.questions = generatedQuestions.sort(() => 0.5 - Math.random()).slice(0, 10);
+            
+            switchView('view-game');
+            loadQuestion();
+        }
+
+        async function fetchQuestionsFromGemini(subject, age) {
+            const prompt = `Generate 10 multiple-choice or fill-in-the-blank questions in English for a ${age}-year-old child in the subject of ${subject}. 
+            For Spelling, output JSON with fields: word, hint, type="subjective".
+            For Math, Sciences, and Islamic Studies, output JSON with fields: q (question text in English), options (array of 4 string options), correct (correct answer string), explanation (explanation in English).
+            Ensure output is valid JSON array only.`;
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textContent) {
+                return JSON.parse(textContent);
+            }
+            throw new Error("Invalid AI response");
+        }
+
+        function restartSubject() {
+            startSubject(state.subject);
+        }
+
+        function loadQuestion() {
+            clearInterval(state.timerInterval);
+            if (state.questionIndex >= state.questions.length) {
+                endGame();
+                return;
+            }
+
+            const q = state.questions[state.questionIndex];
+            document.getElementById('hud-q-count').textContent = `${state.questionIndex + 1}/10`;
+            document.getElementById('hud-score').textContent = state.score;
+            
+            const qText = document.getElementById('q-text');
+            const answerArea = document.getElementById('answer-area');
+            const audioBox = document.getElementById('spelling-audio-box');
+            
+            answerArea.innerHTML = '';
+            audioBox.classList.add('hidden');
+            document.getElementById('feedback-box').classList.add('hidden');
+
+            if (state.subject === 'Spelling') {
+                qText.textContent = `Hint: ${q.hint || 'Spell the English word'}`;
+                audioBox.classList.remove('hidden');
+                playSpellingAudio(q.word);
+
+                answerArea.innerHTML = `
+                    <div class="space-y-3">
+                        <input type="text" id="spelling-input" placeholder="Type English spelling here..." class="w-full text-center text-xl font-bold uppercase border-2 border-indigo-300 rounded-2xl p-3 focus:outline-none focus:ring-4 focus:ring-indigo-400">
+                        <button onclick="submitSpelling('${q.word}')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl shadow-md">Submit Answer</button>
+                    </div>
+                `;
+            } else {
+                qText.textContent = q.q;
+
+                let optsWithEmoji = q.options.map((opt, i) => {
+                    return q.optionsEmoji ? (q.optionsEmoji[i] || opt) : opt;
+                });
+
+                const shuffledOpts = [...optsWithEmoji].sort(() => 0.5 - Math.random());
+                const correctDisplay = q.optionsEmoji ? (q.optionsEmoji[q.options.indexOf(q.correct)] || q.correct) : q.correct;
+
+                shuffledOpts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "option-btn w-full text-left bg-white border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 font-semibold p-4 rounded-2xl shadow-sm transition flex items-center justify-between text-base md:text-lg";
+                    btn.textContent = opt;
+                    btn.onclick = (e) => submitAnswer(opt, correctDisplay, q, e.currentTarget);
+                    answerArea.appendChild(btn);
+                });
+            }
+
+            startTimer();
+            saveProgress();
+        }
+
+        function playSpellingAudio(wordToSpeak) {
+            const q = state.questions[state.questionIndex];
+            const targetWord = wordToSpeak || q.word;
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(targetWord);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function startTimer() {
+            state.timer = 15;
+            document.getElementById('hud-timer').textContent = `${state.timer}s`;
+            
+            state.timerInterval = setInterval(() => {
+                state.timer--;
+                document.getElementById('hud-timer').textContent = `${state.timer}s`;
+                if (state.timer <= 0) {
+                    clearInterval(state.timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            const q = state.questions[state.questionIndex];
+            const correctDisplay = q.optionsEmoji ? (q.optionsEmoji[q.options.indexOf(q.correct)] || q.correct) : q.correct;
+            recordResult(q, false, "(Time Out)");
+            showFeedback(false, `Time is up! Correct answer: ${correctDisplay}`);
+        }
+
+        function submitAnswer(selected, correct, q, btnElement) {
+            clearInterval(state.timerInterval);
+            const isCorrect = selected === correct;
+
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => {
+                b.disabled = true;
+                if (b.textContent === correct) {
+                    b.classList.remove('bg-white', 'border-slate-200', 'hover:bg-indigo-50');
+                    b.classList.add('bg-emerald-200', 'border-emerald-500', 'text-emerald-950', 'font-bold');
+                }
+                if (b === btnElement && !isCorrect) {
+                    b.classList.remove('bg-white', 'border-slate-200', 'hover:bg-indigo-50');
+                    b.classList.add('bg-rose-200', 'border-rose-500', 'text-rose-950', 'font-bold');
+                }
+            });
+
+            if (isCorrect) {
+                state.score += 10;
+                triggerFireworks();
+                showFeedback(true, "Correct Answer! 🔥");
+            } else {
+                showFeedback(false, `Incorrect. The correct answer is highlighted in green.`);
+            }
+            recordResult(q, isCorrect, selected);
+        }
+
+        function submitSpelling(correctWord) {
+            clearInterval(state.timerInterval);
+            const inputField = document.getElementById('spelling-input');
+            const inputVal = inputField.value.trim().toUpperCase();
+            const isCorrect = inputVal === correctWord;
+            const q = state.questions[state.questionIndex];
+
+            inputField.disabled = true;
+            if (isCorrect) {
+                inputField.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-950');
+                state.score += 10;
+                triggerFireworks();
+                showFeedback(true, "English Spelling Correct! 🔥");
+            } else {
+                inputField.classList.add('bg-rose-100', 'border-rose-500', 'text-rose-950');
+                showFeedback(false, `Incorrect. Correct spelling is: ${correctWord}`);
+            }
+            recordResult(q, isCorrect, inputVal);
+        }
+
+        function showFeedback(isCorrect, msg) {
+            const fb = document.getElementById('feedback-box');
+            fb.className = `p-4 rounded-2xl text-center font-bold text-sm shadow ${isCorrect ? 'bg-emerald-100 text-emerald-800 border-2 border-emerald-300' : 'bg-rose-100 text-rose-800 border-2 border-rose-300'}`;
+            fb.textContent = msg;
+            fb.classList.remove('hidden');
+
+            setTimeout(() => {
+                state.questionIndex++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        function recordResult(q, isCorrect, userAns) {
+            const correctDisplay = q.optionsEmoji ? (q.optionsEmoji[q.options.indexOf(q.correct)] || q.correct) : (q.correct || q.word);
+            state.resultsLog.push({
+                question: q.q || `Spell English word for hint: ${q.hint}`,
+                userAnswer: userAns,
+                correctAnswer: correctDisplay,
+                isCorrect: isCorrect,
+                explanation: q.explanation || `The correct English spelling is ${q.word}.`
+            });
+        }
+
+        function triggerFireworks() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function saveProgress() {
+            const data = {
+                subject: state.subject,
+                score: state.score,
+                questionIndex: state.questionIndex,
+                questions: state.questions
+            };
+            localStorage.setItem(`edu_progress_${state.playerName}`, JSON.stringify(data));
+        }
+
+        function resumeGame() {
+            const saved = localStorage.getItem(`edu_progress_${state.playerName}`);
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.subject = data.subject;
+                state.score = data.score;
+                state.questionIndex = data.questionIndex;
+                state.questions = data.questions;
+                switchView('view-game');
+                loadQuestion();
+            }
+        }
+
+        function endGame() {
+            localStorage.removeItem(`edu_progress_${state.playerName}`);
+            
+            const correctCount = state.resultsLog.filter(item => item.isCorrect).length;
+            savePlayerStats(state.playerName, correctCount, state.score);
+
+            switchView('view-summary');
+            
+            document.getElementById('summary-player-info').textContent = `Player: ${state.playerName} | Subject: ${state.subject}`;
+            document.getElementById('final-score').textContent = `Score: ${state.score} / 100`;
+
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            state.resultsLog.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border text-xs space-y-1 ${item.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`;
+                div.innerHTML = `
+                    <div class="font-bold text-slate-700">Question ${idx + 1}: ${item.question}</div>
+                    <div>Your answer: <span class="font-semibold ${item.isCorrect ? 'text-emerald-600' : 'text-rose-600'}">${item.userAnswer}</span></div>
+                    ${!item.isCorrect ? `<div class="text-indigo-700 font-medium">Correct Answer: ${item.correctAnswer} | Explanation: ${item.explanation}</div>` : ''}
+                `;
+                reviewList.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
