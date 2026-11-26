@@ -403,8 +403,8 @@
             } catch (err) {
                 switchView('view-subject', false);
                 showModal(
-                    "Gemini API Connection Required",
-                    "Unable to generate questions directly from Gemini API right now. Please check your internet connection or API configuration and try again."
+                    "Gemini API Connection Error",
+                    `Unable to generate questions from Gemini API (${err.message}). Please check your internet connection or verify that your Gemini API Key is valid.`
                 );
             }
         }
@@ -420,7 +420,7 @@ Include a randomized variety of Math question styles:
 
 Ensure every question has exactly 4 distinct options, one exact matching correct answer from those 4 options, and a clear, child-friendly explanation.`;
 
-            const apiKey = "";
+            const apiKey = "AQ.Ab8RN6JXR7Ich-HFGKhiTbash71c7EEJz8NSy0_NDSh1oAkvvQ";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
             const payload = {
@@ -459,7 +459,8 @@ Ensure every question has exactly 4 distinct options, one exact matching correct
                     });
 
                     if (!res.ok) {
-                        throw new Error(`HTTP error ${res.status}`);
+                        const errText = await res.text();
+                        throw new Error(`HTTP ${res.status}`);
                     }
 
                     const data = await res.json();
@@ -523,4 +524,139 @@ Ensure every question has exactly 4 distinct options, one exact matching correct
             document.getElementById('hud-timer').textContent = `${state.timer}s`;
             
             state.timerInterval = setInterval(() => {
-// ... existing code ... -->
+                state.timer--;
+                document.getElementById('hud-timer').textContent = `${state.timer}s`;
+                if (state.timer <= 0) {
+                    clearInterval(state.timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            const q = state.questions[state.questionIndex];
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => {
+                b.disabled = true;
+                if (b.textContent === q.correct) {
+                    b.classList.remove('bg-white', 'border-slate-200', 'hover:bg-indigo-50');
+                    b.classList.add('bg-emerald-200', 'border-emerald-500', 'text-emerald-950', 'font-bold');
+                }
+            });
+            recordResult(q, false, "(Time Out)");
+            showFeedback(false, `Time is up! Correct answer: ${q.correct}`);
+        }
+
+        function submitAnswer(selected, correct, q, btnElement) {
+            clearInterval(state.timerInterval);
+            const isCorrect = selected === correct;
+
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => {
+                b.disabled = true;
+                if (b.textContent === correct) {
+                    b.classList.remove('bg-white', 'border-slate-200', 'hover:bg-indigo-50');
+                    b.classList.add('bg-emerald-200', 'border-emerald-500', 'text-emerald-950', 'font-bold');
+                }
+                if (b === btnElement && !isCorrect) {
+                    b.classList.remove('bg-white', 'border-slate-200', 'hover:bg-indigo-50');
+                    b.classList.add('bg-rose-200', 'border-rose-500', 'text-rose-950', 'font-bold');
+                }
+            });
+
+            if (isCorrect) {
+                state.score += 10;
+                document.getElementById('hud-score').textContent = state.score;
+                triggerFireworks();
+                showFeedback(true, "Correct Answer! 🔥");
+            } else {
+                showFeedback(false, `Incorrect. The correct answer is highlighted in green.`);
+            }
+            recordResult(q, isCorrect, selected);
+        }
+
+        function showFeedback(isCorrect, msg) {
+            const fb = document.getElementById('feedback-box');
+            fb.className = `p-4 rounded-2xl text-center font-bold text-sm shadow ${isCorrect ? 'bg-emerald-100 text-emerald-800 border-2 border-emerald-300' : 'bg-rose-100 text-rose-800 border-2 border-rose-300'}`;
+            fb.textContent = msg;
+            fb.classList.remove('hidden');
+
+            setTimeout(() => {
+                state.questionIndex++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        function recordResult(q, isCorrect, userAns) {
+            state.resultsLog.push({
+                question: q.q,
+                userAnswer: userAns,
+                correctAnswer: q.correct,
+                isCorrect: isCorrect,
+                explanation: q.explanation || `The correct answer is ${q.correct}.`
+            });
+        }
+
+        function triggerFireworks() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function saveProgress() {
+            const data = {
+                subject: state.subject,
+                score: state.score,
+                questionIndex: state.questionIndex,
+                questions: state.questions,
+                resultsLog: state.resultsLog
+            };
+            localStorage.setItem(`edu_progress_${state.playerName}`, JSON.stringify(data));
+        }
+
+        function resumeGame() {
+            const saved = localStorage.getItem(`edu_progress_${state.playerName}`);
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.subject = data.subject || 'Math';
+                state.score = data.score || 0;
+                state.questionIndex = data.questionIndex || 0;
+                state.questions = data.questions || [];
+                state.resultsLog = data.resultsLog || [];
+                switchView('view-game', true);
+                loadQuestion();
+            }
+        }
+
+        function endGame() {
+            localStorage.removeItem(`edu_progress_${state.playerName}`);
+            
+            const correctCount = state.resultsLog.filter(item => item.isCorrect).length;
+            savePlayerStats(state.playerName, correctCount, state.score);
+
+            switchView('view-summary', false);
+            
+            document.getElementById('summary-player-info').textContent = `Player: ${state.playerName} | Subject: ${state.subject}`;
+            document.getElementById('final-score').textContent = `Score: ${state.score} / 100`;
+
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            state.resultsLog.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border text-xs space-y-1 ${item.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`;
+                div.innerHTML = `
+                    <div class="font-bold text-slate-700">Question ${idx + 1}: ${item.question}</div>
+                    <div>Your answer: <span class="font-semibold ${item.isCorrect ? 'text-emerald-600' : 'text-rose-600'}">${item.userAnswer}</span></div>
+                    ${!item.isCorrect ? `<div class="text-indigo-700 font-medium">Correct Answer: ${item.correctAnswer} | Explanation: ${item.explanation}</div>` : ''}
+                `;
+                reviewList.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
