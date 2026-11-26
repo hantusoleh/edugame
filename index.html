@@ -216,12 +216,16 @@
     <!-- Custom Confirmation Modal for Resetting All Scores -->
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border-4 border-rose-200">
-            <div class="text-4xl">⚠️</div>
-            <h3 class="text-xl font-bold text-rose-700">Reset All Scores?</h3>
-            <p class="text-sm text-slate-600">Are you sure you want to delete all scores, accuracy records, and saved game progress for both Ammar and Afif?</p>
+            <div class="text-4xl">🔒</div>
+            <h3 class="text-xl font-bold text-rose-700">Parent Authorization Required</h3>
+            <p class="text-xs text-slate-600">Enter the parent password to reset all scores, accuracy records, and saved progress for Ammar and Afif.</p>
+            <div class="space-y-1">
+                <input type="password" id="reset-password-input" placeholder="Enter password..." onkeydown="if(event.key==='Enter') confirmResetAllScores()" class="w-full text-center text-lg font-bold tracking-widest border-2 border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-rose-500">
+                <p id="reset-password-error" class="hidden text-xs font-bold text-rose-600">Incorrect password! Access denied.</p>
+            </div>
             <div class="flex gap-3">
                 <button onclick="closeResetConfirm()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl">Cancel</button>
-                <button onclick="confirmResetAllScores()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl shadow">Yes, Reset</button>
+                <button onclick="confirmResetAllScores()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl shadow">Reset Scores</button>
             </div>
         </div>
     </div>
@@ -402,7 +406,12 @@
         }
 
         function openResetConfirm() {
+            const input = document.getElementById('reset-password-input');
+            const err = document.getElementById('reset-password-error');
+            input.value = '';
+            err.classList.add('hidden');
             document.getElementById('reset-confirm-modal').classList.remove('hidden');
+            setTimeout(() => input.focus(), 100);
         }
 
         function closeResetConfirm() {
@@ -410,6 +419,16 @@
         }
 
         function confirmResetAllScores() {
+            const inputVal = document.getElementById('reset-password-input').value.trim();
+            const err = document.getElementById('reset-password-error');
+
+            if (inputVal !== '190317') {
+                err.classList.remove('hidden');
+                document.getElementById('reset-password-input').value = '';
+                document.getElementById('reset-password-input').focus();
+                return;
+            }
+
             const players = ["Ammar Faiq", "Afif Firdan"];
             players.forEach(name => {
                 localStorage.removeItem(`edu_stats_${name}`);
