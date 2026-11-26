@@ -477,8 +477,8 @@ Include a randomized variety of Math question styles:
 Ensure every question has exactly 4 distinct options, one exact matching correct answer from those 4 options, and a clear, child-friendly explanation.`;
 
             const apiKey = "AQ.Ab8RN6JXR7Ich-HFGKhiTbash71c7EEJz8NSy0_NDSh1oAkvvQ";
-            // Vertex AI Express Mode endpoint for AQ.* keys from Google AI Studio
-            const apiUrl = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+            // Official Gemini Developer API endpoint (uses x-goog-api-key header for AQ.* keys)
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
 
             const payload = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -512,7 +512,8 @@ Ensure every question has exactly 4 distinct options, one exact matching correct
                     const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'x-goog-api-key': apiKey
                         },
                         body: JSON.stringify(payload)
                     });
