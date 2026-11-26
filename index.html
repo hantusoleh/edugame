@@ -477,10 +477,11 @@ Include a randomized variety of Math question styles:
 Ensure every question has exactly 4 distinct options, one exact matching correct answer from those 4 options, and a clear, child-friendly explanation.`;
 
             const apiKey = "AQ.Ab8RN6JXR7Ich-HFGKhiTbash71c7EEJz8NSy0_NDSh1oAkvvQ";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent`;
+            // Vertex AI Express Mode endpoint for AQ.* keys from Google AI Studio
+            const apiUrl = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
             const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -499,6 +500,28 @@ Ensure every question has exactly 4 distinct options, one exact matching correct
                             },
                             required: ["q", "options", "correct", "explanation"]
                         }
+                    }
+                }
+            };
+
+            const maxRetries = 3;
+            const delays = [1000, 2000, 4000];
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        const errMsg = errData?.error?.message || `HTTP ${res.status}`;
+                        throw new Error(errMsg);
+                    }
                     }
                 }
             };
