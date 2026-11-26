@@ -77,11 +77,16 @@
 
             <!-- LEADERBOARD TABLE: Sorted by Accuracy Descending -->
             <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 space-y-3">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-2">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
                         <span>🏆</span> Math Performance Records
                     </h3>
-                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Sorted by: Highest Accuracy</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase hidden sm:inline">Sorted by: Highest Accuracy</span>
+                        <button onclick="openResetConfirm()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-[11px] px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                            <span>🗑️</span> Reset Scores
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
@@ -205,6 +210,19 @@
             <h3 id="modal-title" class="text-xl font-bold text-indigo-700">Message</h3>
             <p id="modal-desc" class="text-sm text-slate-600">Brief description...</p>
             <button onclick="closeModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl">Got it</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal for Resetting All Scores -->
+    <div id="reset-confirm-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border-4 border-rose-200">
+            <div class="text-4xl">⚠️</div>
+            <h3 class="text-xl font-bold text-rose-700">Reset All Scores?</h3>
+            <p class="text-sm text-slate-600">Are you sure you want to delete all scores, accuracy records, and saved game progress for both Ammar and Afif?</p>
+            <div class="flex gap-3">
+                <button onclick="closeResetConfirm()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl">Cancel</button>
+                <button onclick="confirmResetAllScores()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl shadow">Yes, Reset</button>
+            </div>
         </div>
     </div>
 
@@ -381,6 +399,25 @@
 
         function closeModal() {
             document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function openResetConfirm() {
+            document.getElementById('reset-confirm-modal').classList.remove('hidden');
+        }
+
+        function closeResetConfirm() {
+            document.getElementById('reset-confirm-modal').classList.add('hidden');
+        }
+
+        function confirmResetAllScores() {
+            const players = ["Ammar Faiq", "Afif Firdan"];
+            players.forEach(name => {
+                localStorage.removeItem(`edu_stats_${name}`);
+                localStorage.removeItem(`edu_progress_${name}`);
+            });
+            closeResetConfirm();
+            renderLeaderboard();
+            showModal("Scores Reset!", "All performance records and saved progress for Ammar Faiq and Afif Firdan have been cleared.");
         }
 
         // Start Math Subject - Mandatory 100% Gemini API Generation
