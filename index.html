@@ -42,6 +42,9 @@
             <button id="btn-nav-subject" onclick="switchSubjectAction()" class="hidden bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1 shadow-sm">
                 <span>📚</span> Change Subject
             </button>
+            <button id="btn-nav-setting" onclick="openParentSetting()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1 shadow-sm">
+                <span>⚙️</span> Setting
+            </button>
         </div>
     </nav>
 
@@ -81,12 +84,7 @@
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
                         <span>🏆</span> Math Performance Records
                     </h3>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-slate-400 font-semibold uppercase hidden sm:inline">Sorted by: Highest Accuracy</span>
-                        <button onclick="openResetConfirm()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-[11px] px-2.5 py-1 rounded-lg transition flex items-center gap-1">
-                            <span>🗑️</span> Reset Scores
-                        </button>
-                    </div>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Sorted by: Highest Accuracy</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
@@ -213,25 +211,73 @@
         </div>
     </div>
 
-    <!-- Custom Confirmation Modal for Resetting All Scores -->
-    <div id="reset-confirm-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border-4 border-rose-200">
-            <div class="text-4xl">🔒</div>
-            <h3 class="text-xl font-bold text-rose-700">Parent Authorization Required</h3>
-            <p class="text-xs text-slate-600">Enter the parent password to reset all scores, accuracy records, and saved progress for Ammar and Afif.</p>
-            <div class="space-y-1">
-                <input type="password" id="reset-password-input" placeholder="Enter password..." onkeydown="if(event.key==='Enter') confirmResetAllScores()" class="w-full text-center text-lg font-bold tracking-widest border-2 border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-rose-500">
-                <p id="reset-password-error" class="hidden text-xs font-bold text-rose-600">Incorrect password! Access denied.</p>
+    <!-- Parent Setting Modal (Step 1: Password -> Step 2: API Key, Ages, Reset Scores) -->
+    <div id="parent-setting-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl border-4 border-indigo-200 max-h-[90vh] overflow-y-auto">
+            
+            <!-- STEP 1: PASSWORD VERIFICATION -->
+            <div id="setting-step-password" class="text-center space-y-4">
+                <div class="text-4xl">🔐</div>
+                <h3 class="text-xl font-bold text-indigo-800">Parent Settings</h3>
+                <p class="text-xs text-slate-600">Enter parent password to access API Key, player ages, and score reset.</p>
+                <div class="space-y-1">
+                    <input type="password" id="setting-password-input" placeholder="Enter password..." onkeydown="if(event.key==='Enter') verifySettingPassword()" class="w-full text-center text-lg font-bold tracking-widest border-2 border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    <p id="setting-password-error" class="hidden text-xs font-bold text-rose-600">Incorrect password! Access denied.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="closeParentSetting()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl">Cancel</button>
+                    <button onclick="verifySettingPassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow">Unlock</button>
+                </div>
             </div>
-            <div class="flex gap-3">
-                <button onclick="closeResetConfirm()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl">Cancel</button>
-                <button onclick="confirmResetAllScores()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl shadow">Reset Scores</button>
+
+            <!-- STEP 2: SETTINGS CONTROLS -->
+            <div id="setting-step-controls" class="hidden space-y-5 text-left">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h3 class="text-lg font-extrabold text-indigo-800 flex items-center gap-1.5">
+                        <span>⚙️</span> Parent Controls
+                    </h3>
+                    <button onclick="closeParentSetting()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+                </div>
+
+                <!-- Section A: Update Gemini API Key -->
+                <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 space-y-2">
+                    <label class="block text-xs font-bold text-indigo-900 uppercase">1. Gemini API Key</label>
+                    <p class="text-[11px] text-slate-500">Stored privately in your browser (safe for GitHub).</p>
+                    <input type="password" id="setting-api-input" placeholder="Paste Gemini API Key..." class="w-full text-xs font-mono border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-indigo-500">
+                    <button onclick="saveApiKeySetting()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-lg shadow-sm">Save API Key</button>
+                </div>
+
+                <!-- Section B: Update Player Ages (Hidden from kids UI, used for AI difficulty) -->
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2.5">
+                    <label class="block text-xs font-bold text-emerald-900 uppercase">2. Player Age Level (AI Difficulty)</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="block text-[11px] font-semibold text-slate-600 mb-1">Ammar Faiq (Age)</span>
+                            <input type="number" id="setting-age-ammar" min="4" max="15" class="w-full text-sm font-bold text-center border border-slate-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <span class="block text-[11px] font-semibold text-slate-600 mb-1">Afif Firdan (Age)</span>
+                            <input type="number" id="setting-age-afif" min="4" max="15" class="w-full text-sm font-bold text-center border border-slate-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <button onclick="savePlayerAgesSetting()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg shadow-sm">Update Ages</button>
+                </div>
+
+                <!-- Section C: Reset All Scores -->
+                <div class="bg-rose-50/70 border border-rose-200 rounded-xl p-3.5 space-y-2">
+                    <label class="block text-xs font-bold text-rose-900 uppercase">3. Reset Performance Records</label>
+                    <p class="text-[11px] text-slate-600">Clear all scores, accuracy records, and saved progress for both players.</p>
+                    <button onclick="confirmResetAllScores()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 rounded-lg shadow-sm">🗑️ Reset All Scores</button>
+                </div>
+
+                <button onclick="closeParentSetting()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs py-2.5 rounded-xl">Done & Close</button>
             </div>
+
         </div>
     </div>
 
     <script>
-        // Application State (No hardcoded fallback questions)
+        // Application State (No hardcoded fallback questions or exposed API key)
         let state = {
             currentView: 'view-profile',
             viewHistory: [],
@@ -251,14 +297,10 @@
             updateNavButtons();
         });
 
-        // Navigation & View Management
         function switchView(viewId, addToHistory = true) {
-            clearInterval(state.timerInterval);
-
-            if (addToHistory && state.currentView && state.currentView !== viewId && state.currentView !== 'view-loading') {
+            if (addToHistory && state.currentView !== viewId) {
                 state.viewHistory.push(state.currentView);
             }
-
             state.currentView = viewId;
 
             ['view-profile', 'view-subject', 'view-loading', 'view-game', 'view-summary'].forEach(id => {
@@ -386,10 +428,18 @@
             }
         }
 
+        function getPlayerAge(name) {
+            const savedAges = JSON.parse(localStorage.getItem('edu_player_ages') || '{}');
+            if (savedAges[name]) {
+                return parseInt(savedAges[name], 10);
+            }
+            return (name === "Ammar Faiq") ? 9 : 7;
+        }
+
         function selectProfile(name) {
             state.playerName = name;
-            // Hidden age categorization: Ammar = 9, Afif = 7
-            state.playerAge = (name === "Ammar Faiq") ? 9 : 7;
+            // Hidden age categorization fetched from settings/default
+            state.playerAge = getPlayerAge(name);
             document.getElementById('current-player-name').textContent = name;
             checkSavedProgress();
             switchView('view-subject', true);
@@ -405,43 +455,103 @@
             document.getElementById('custom-modal').classList.add('hidden');
         }
 
-        function openResetConfirm() {
-            const input = document.getElementById('reset-password-input');
-            const err = document.getElementById('reset-password-error');
-            input.value = '';
-            err.classList.add('hidden');
-            document.getElementById('reset-confirm-modal').classList.remove('hidden');
-            setTimeout(() => input.focus(), 100);
+        // Parent Settings Modal Functions (Password -> Controls)
+        function openParentSetting() {
+            clearInterval(state.timerInterval);
+            document.getElementById('setting-step-password').classList.remove('hidden');
+            document.getElementById('setting-step-controls').classList.add('hidden');
+            document.getElementById('setting-password-error').classList.add('hidden');
+            
+            const pwdInput = document.getElementById('setting-password-input');
+            pwdInput.value = '';
+            document.getElementById('parent-setting-modal').classList.remove('hidden');
+            setTimeout(() => pwdInput.focus(), 100);
         }
 
-        function closeResetConfirm() {
-            document.getElementById('reset-confirm-modal').classList.add('hidden');
+        function closeParentSetting() {
+            document.getElementById('parent-setting-modal').classList.add('hidden');
         }
 
-        function confirmResetAllScores() {
-            const inputVal = document.getElementById('reset-password-input').value.trim();
-            const err = document.getElementById('reset-password-error');
+        function verifySettingPassword() {
+            const inputVal = document.getElementById('setting-password-input').value.trim();
+            const err = document.getElementById('setting-password-error');
 
             if (inputVal !== '190317') {
                 err.classList.remove('hidden');
-                document.getElementById('reset-password-input').value = '';
-                document.getElementById('reset-password-input').focus();
+                document.getElementById('setting-password-input').value = '';
+                document.getElementById('setting-password-input').focus();
                 return;
             }
 
+            // Populate current settings into inputs
+            document.getElementById('setting-api-input').value = localStorage.getItem('edu_gemini_api_key') || '';
+            document.getElementById('setting-age-ammar').value = getPlayerAge('Ammar Faiq');
+            document.getElementById('setting-age-afif').value = getPlayerAge('Afif Firdan');
+
+            document.getElementById('setting-step-password').classList.add('hidden');
+            document.getElementById('setting-step-controls').classList.remove('hidden');
+        }
+
+        function saveApiKeySetting() {
+            const keyVal = document.getElementById('setting-api-input').value.trim();
+            if (!keyVal) {
+                localStorage.removeItem('edu_gemini_api_key');
+                closeParentSetting();
+                showModal("API Key Removed", "The saved Gemini API Key has been cleared from this browser.");
+                return;
+            }
+            localStorage.setItem('edu_gemini_api_key', keyVal);
+            closeParentSetting();
+            showModal("API Key Saved!", "Your Gemini API Key is securely stored in this browser and ready to generate questions.");
+        }
+
+        function savePlayerAgesSetting() {
+            const ammarAge = parseInt(document.getElementById('setting-age-ammar').value, 10);
+            const afifAge = parseInt(document.getElementById('setting-age-afif').value, 10);
+
+            if (isNaN(ammarAge) || ammarAge < 4 || ammarAge > 15 || isNaN(afifAge) || afifAge < 4 || afifAge > 15) {
+                showModal("Invalid Age", "Please enter a valid age between 4 and 15.");
+                return;
+            }
+
+            const ages = {
+                "Ammar Faiq": ammarAge,
+                "Afif Firdan": afifAge
+            };
+            localStorage.setItem('edu_player_ages', JSON.stringify(ages));
+
+            if (state.playerName) {
+                state.playerAge = getPlayerAge(state.playerName);
+            }
+
+            closeParentSetting();
+            showModal("Ages Updated!", `Difficulty levels updated (Ammar: ${ammarAge} yrs, Afif: ${afifAge} yrs). Age numbers remain hidden on the game screen.`);
+        }
+
+        function confirmResetAllScores() {
             const players = ["Ammar Faiq", "Afif Firdan"];
             players.forEach(name => {
                 localStorage.removeItem(`edu_stats_${name}`);
                 localStorage.removeItem(`edu_progress_${name}`);
             });
-            closeResetConfirm();
+            closeParentSetting();
             renderLeaderboard();
             showModal("Scores Reset!", "All performance records and saved progress for Ammar Faiq and Afif Firdan have been cleared.");
         }
 
         // Start Math Subject - Mandatory 100% Gemini API Generation
         async function startSubject(subjectKey) {
+            const storedApiKey = localStorage.getItem('edu_gemini_api_key') || '';
+            if (!storedApiKey) {
+                showModal(
+                    "Gemini API Key Required",
+                    "Please click the '⚙️ Setting' button at the top right, enter the parent password, and save your Gemini API Key first."
+                );
+                return;
+            }
+
             state.subject = subjectKey;
+            state.playerAge = getPlayerAge(state.playerName);
             state.score = 0;
             state.questionIndex = 0;
             state.resultsLog = [];
@@ -449,7 +559,7 @@
             switchView('view-loading', false);
 
             try {
-                const generatedQuestions = await fetchQuestionsFromGemini(subjectKey, state.playerAge);
+                const generatedQuestions = await fetchQuestionsFromGemini(subjectKey, state.playerAge, storedApiKey);
                 if (!generatedQuestions || generatedQuestions.length < 10) {
                     throw new Error("Incomplete question set returned from Gemini API.");
                 }
@@ -460,24 +570,23 @@
                 switchView('view-subject', false);
                 showModal(
                     "Gemini API Connection Error",
-                    `Unable to generate questions from Gemini API (${err.message}). Please check your internet connection or verify that your Gemini API Key is valid.`
+                    `Unable to generate questions from Gemini API (${err.message}). Please check your internet connection or verify your API Key in ⚙️ Setting.`
                 );
             }
         }
 
         // Fetch 10 Math Questions directly from Gemini API with Exponential Backoff & Structured JSON Schema
-        async function fetchQuestionsFromGemini(subject, age) {
+        async function fetchQuestionsFromGemini(subject, age, apiKey) {
             const prompt = `Generate 10 unique, engaging, and age-appropriate Math questions in English for a ${age}-year-old child.
 Include a randomized variety of Math question styles:
-1. Standard arithmetic calculations (addition, subtraction, multiplication for age 9, basic numbers for age 7)
+1. Standard arithmetic calculations (addition, subtraction, multiplication/division appropriate for age ${age})
 2. Fill in the blank number sequences (e.g., "12, __, 14")
 3. Visual emoji counting or comparison questions (where options can include fun fruit/object emojis like "🍎🍎🍎")
 4. Simple word problems suitable for a ${age}-year-old.
 
 Ensure every question has exactly 4 distinct options, one exact matching correct answer from those 4 options, and a clear, child-friendly explanation.`;
 
-            const apiKey = "AQ.Ab8RN6JXR7Ich-HFGKhiTbash71c7EEJz8NSy0_NDSh1oAkvvQ";
-            // Official Gemini Developer API endpoint (uses x-goog-api-key header for AQ.* keys)
+            // Official Gemini Developer API endpoint (uses x-goog-api-key header)
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
 
             const payload = {
